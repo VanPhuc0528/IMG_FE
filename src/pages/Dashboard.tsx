@@ -208,13 +208,13 @@ const Dashboard: React.FC = () => {
       client_id: CLIENT_ID,
       scope: SCOPE,
       callback: async (tokenResponse: { access_token: string }) => {
-        const accessToken = tokenResponse.access_token;
-        accessTokenRef.current = accessToken;
-        console.log("Access Token:", accessToken)
+        const access_token = tokenResponse.access_token;
+        accessTokenRef.current = access_token;
+        console.log("Access Token:", access_token)
 
         try {
           const userInfoRes = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: { Authorization: `Bearer ${accessToken}` },
+            headers: { Authorization: `Bearer ${access_token}` },
           });
 
           const userInfo = userInfoRes.data;
@@ -234,7 +234,8 @@ const Dashboard: React.FC = () => {
             },
           }). catch((err) => console.error("❌ Lỗi gửi token:", err));
 
-          showPicker(accessToken, driveEmail);
+          console.log("Access Token Drive trả về:", access_token);
+          showPicker(access_token, driveEmail);
         } catch (err) {
           console.error("Lỗi lấy thông tin người dùng Google:", err);
           setError("Không thể lấy thông tin người dùng Google.");
@@ -287,6 +288,7 @@ const Dashboard: React.FC = () => {
                 img_name: file.name,
                 img_id: file.id,
                 img_folder_id: selectedFolderId,
+                sync_type: "gg_drive"
               }, {
                 headers: {
                   "Content-Type": "application/json",
