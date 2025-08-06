@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api"; // dùng http, không phải https nếu chạy local
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
 // ✅ Đăng nhập bằng email và password
 export async function login(email: string, password: string) {

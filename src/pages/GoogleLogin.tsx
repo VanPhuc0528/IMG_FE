@@ -8,7 +8,7 @@ const GoogleLogin = () => {
   const { loginUser } = useAuth();
 
   const login = useGoogleLogin({
-    scope: 'openid email profile',
+    scope: 'openid email profile', //Lấy OpenID xác thực người dùng, lấy email chuẩn người dùng, và thông tin của người dùng email đó
     onSuccess: async (response) => {
       try {
         const { access_token } = response;

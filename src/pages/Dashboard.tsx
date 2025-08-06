@@ -204,46 +204,47 @@ const Dashboard: React.FC = () => {
   const handleSyncDrive = () => {
     if (!selectedFolderId || !selectedFolder?.allowSync || !window.google?.accounts?.oauth2) return;
 
-    const tokenClient = window.google.accounts.oauth2.initTokenClient({
+    const codeClient = window.google.accounts.oauth2.initCodeClient({
       client_id: CLIENT_ID,
       scope: SCOPE,
-      callback: async (tokenResponse: { access_token: string }) => {
-        const access_token = tokenResponse.access_token;
-        accessTokenRef.current = access_token;
-        console.log("Access Token:", access_token)
+      redirect_uri: "postmessage", // dùng dạng này để không cần redirect
+      access_type: "offline", // yêu cầu Google trả refresh_token
+      prompt: "consent",       // bắt buộc hiển thị lại consent screen để lấy refresh_token
+
+      callback: async (response: { code: string }) => {
+        const code = response.code;
+        if (!code) {
+          console.error("❌ Không nhận được mã code");
+          return;
+        }
+
+        const userId = getCurrentUserId();
+        const token = localStorage.getItem("token");
 
         try {
-          const userInfoRes = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
-            headers: { Authorization: `Bearer ${access_token}` },
-          });
-
-          const userInfo = userInfoRes.data;
-          const driveEmail = userInfo.email;
-
-          const userId = getCurrentUserId();
-          const token = localStorage.getItem("token");
-          
-          await axios.post(`${API_URL}/user/${userId}/sync/save_drive_token/`,{
-            access_token: tokenResponse.access_token,
+          await axios.post(`${API_URL}/user/${userId}/sync/save_drive_token/`, {
+            code: code,
             userId: userId,
-            driveEmail: driveEmail,
+            
+            // nếu backend cần driveEmail thì bạn phải lấy access_token tạm để fetch
           }, {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-          }). catch((err) => console.error("❌ Lỗi gửi token:", err));
+          });
 
-          console.log("Access Token Drive trả về:", access_token);
-          showPicker(access_token, driveEmail);
+          console.log("✅ Gửi code về backend thành công");
+
+          // Sau đó bạn có thể gọi API lấy access_token mới từ backend hoặc gọi showPicker nếu backend trả lại access_token
+          // showPicker(access_token, driveEmail); <-- bạn sẽ cần access_token mới từ backend
         } catch (err) {
-          console.error("Lỗi lấy thông tin người dùng Google:", err);
-          setError("Không thể lấy thông tin người dùng Google.");
+          console.error("❌ Lỗi gửi code về backend:", err);
         }
       },
     });
 
-    tokenClient.requestAccessToken();
+    codeClient.requestCode(); // 💥 Kích hoạt popup đăng nhập Google để lấy mã code
   };
 
   const showPicker = (accessToken: string, driveEmail: string) => {
@@ -253,7 +254,7 @@ const Dashboard: React.FC = () => {
     const picker = new window.google.picker.PickerBuilder()
       .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
       .setAppId(CLIENT_ID.split("-")[0])
-      .setOAuthToken(accessToken)
+      .setOAuthToken(accessToken) // ✅ access_token từ backend
       .addView(view)
       .addView(new window.google.picker.DocsUploadView())
       .setDeveloperKey(DEVELOPER_KEY)
@@ -270,19 +271,10 @@ const Dashboard: React.FC = () => {
               created_at: new Date().toISOString(),
             };
 
-            const body = JSON.stringify({
-              user_id: getCurrentUserId,
-              drive_email: driveEmail,
-              img_name: file.name,
-              img_id: file.id,
-              img_folder_id: selectedFolderId,
-            })
-            console.log("Body", body)
-
             try {
               const userId = getCurrentUserId();
               const token = localStorage.getItem("token");
-              await axios.post(`${API_URL}/user/${userId}/sync/img/`,{
+              await axios.post(`${API_URL}/user/${userId}/sync/img/`, {
                 user_id: userId,
                 drive_email: driveEmail,
                 img_name: file.name,
