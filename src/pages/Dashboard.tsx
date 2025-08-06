@@ -224,7 +224,7 @@ const Dashboard: React.FC = () => {
           const token = localStorage.getItem("token");
           
           await axios.post(`${API_URL}/user/${userId}/sync/save_drive_token/`,{
-            accessToken: tokenResponse.access_token,
+            access_token: tokenResponse.access_token,
             userId: userId,
             driveEmail: driveEmail,
           }, {
