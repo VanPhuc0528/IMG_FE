@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PermissionShare from "../permissions/PermissionShare";
 import { useNavigate } from "react-router-dom";
-import type { Folder, SharedFolder, SharedFoldersResponse } from "../../types";
+import type { Folder, SharedFolder } from "../../types";
 
 interface Props {
   folders: Folder[];
