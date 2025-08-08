@@ -46,7 +46,7 @@ const Dashboard: React.FC = () => {
       try {
         const userId = getCurrentUserId();
         const token = localStorage.getItem("token");
-        const response = await axios.get(`${API_URL}/user/${userId}/home/`, {
+        const response = await axios.get(`${API_URL}/user/home/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -78,15 +78,15 @@ const Dashboard: React.FC = () => {
 
     try {
       if (selectedFolderId === null) {
-        const res = await axios.get(`${API_URL}/user/${userId}/home/`, {
+        const res = await axios.get(`${API_URL}/user/home/`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setImages(res.data.images || []);
       } else {
         const isShared = sharedFolder.some((f) => f.id === selectedFolderId);
         const url = isShared
-          ? `${API_URL}/user/${userId}/shared/  `
-          : `${API_URL}/user/${userId}/folder/${selectedFolderId}/images/`;
+          ? `${API_URL}/user/shared/`
+          : `${API_URL}/user/folder/${selectedFolderId}/images/`;
 
         const res = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },
@@ -140,7 +140,7 @@ const Dashboard: React.FC = () => {
     const token  = localStorage.getItem("token");
 
     try {
-      const res = await axios.get(`${API_URL}/user/${userId}/shared/`, {
+      const res = await axios.get(`${API_URL}/user/shared/`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -172,9 +172,9 @@ const Dashboard: React.FC = () => {
 
         console.log("formData:", formData);
 
-        const userId = getCurrentUserId();
+        // const userId = getCurrentUserId();
         const token = localStorage.getItem("token");
-        const res = await axios.post(`${API_URL}/user/${userId}/upload/img/`, formData, {
+        const res = await axios.post(`${API_URL}/user/upload/img/`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -221,7 +221,7 @@ const Dashboard: React.FC = () => {
 
         try {
           // Gửi code về backend để đổi lấy access_token + refresh_token
-          const res = await axios.post(`${API_URL}/user/${userId}/sync/save_drive_token/`, {
+          const res = await axios.post(`${API_URL}/user/sync/save_drive_token/`, {
             code: code,
             userId: userId,
             
@@ -277,7 +277,7 @@ const Dashboard: React.FC = () => {
             try {
               const userId = getCurrentUserId();
               const token = localStorage.getItem("token");
-              await axios.post(`${API_URL}/user/${userId}/sync/img/`, {
+              await axios.post(`${API_URL}/user/sync/img/`, {
                 user_id: userId,
                 drive_email: driveEmail,
                 img_name: file.name,
@@ -316,7 +316,7 @@ const Dashboard: React.FC = () => {
     const userId = getCurrentUserId();
     const token = localStorage.getItem("token");
     try {
-      const response = await axios.post(`${API_URL}/user/${userId}/folder/create/`, {
+      const response = await axios.post(`${API_URL}/user/folder/create/`, {
         name: name.trim(),
         parent: parentId ?? null,
         owner: userId,
@@ -351,11 +351,10 @@ const Dashboard: React.FC = () => {
   const handleDeleteFolder = async (folderId: number) => {
     if (!confirm("Xoá thư mục và toàn bộ ảnh bên trong?")) return;
 
-    const userId = getCurrentUserId();
     const token = localStorage.getItem("token");
 
     try {
-      await axios.delete(`${API_URL}/user/${userId}/folder/${folderId}/`, {
+      await axios.delete(`${API_URL}/user/folder/${folderId}/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

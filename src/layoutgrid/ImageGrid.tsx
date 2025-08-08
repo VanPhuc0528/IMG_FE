@@ -53,7 +53,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({
 
     const token = localStorage.getItem("token");
     const current = folders.find((f) => f.id === folderId);
-    const owner_id = current?.owner_id || user_id;
+    // const owner_id = current?.owner_id || user_id;
 
     try {
       const res =
@@ -61,7 +61,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({
           ? await axios.get(`${API_URL}/user/${user_id}/home/?t=${Date.now()}`, { // Thêm timestamp để tránh cache
               headers: { Authorization: `Bearer ${token}` },
             })
-          : await axios.get(`${API_URL}/user/${owner_id}/folder/${folderId}/images/?t=${Date.now()}`, {
+          : await axios.get(`${API_URL}/user/folder/${folderId}/images/?t=${Date.now()}`, {
               headers: { Authorization: `Bearer ${token}` },
             });
 
@@ -102,7 +102,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({
     if(!confirm("Bạn có chắc muốn xóa ảnh này chứ?")) return;
 
     try{
-      await axios.delete(`${API_URL}/user/${userId}/folder/${folderId}/image/${imageId}/`, {
+      await axios.delete(`${API_URL}/user/folder/${folderId}/image/${imageId}/`, {
         headers: {Authorization: `Bearer ${token}`},
       });
 

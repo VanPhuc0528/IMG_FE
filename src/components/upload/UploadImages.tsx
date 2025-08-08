@@ -52,7 +52,7 @@ const UploadImages: React.FC<Props> = ({ folderId, disabled, onUploaded }) => {
       try {
         const userId = getCurrentUserId();
         const token = localStorage.getItem("token");
-        const res = await axios.post(`${API_URL}/user/${userId}/upload/img/`, formData, {
+        const res = await axios.post(`${API_URL}/user/upload/img/`, formData, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

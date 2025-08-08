@@ -56,7 +56,7 @@ const PermissionShare: React.FC<Props> = ({ folderId, userId, onSubmit }) => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        `${API_URL}/user/${userId}/folder/${folderId}/change_permission/`,
+        `${API_URL}/user/folder/${folderId}/change_permission/`,
         { allow_read, allow_write, allow_delete },
         {
           headers: {
