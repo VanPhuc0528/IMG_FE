@@ -29,7 +29,7 @@ const Sidebar: React.FC = () => {
     const token = localStorage.getItem("token");
     const fetchFolders = async () => {
       try {
-        const res = await axios.get(`${API_URL}/user/${userId}/home/`, {
+        const res = await axios.get(`${API_URL}/user/home/`, {
           params: { user_id: userId },
           headers: {
             Authorization: `Bearer ${token}`,
@@ -57,7 +57,7 @@ const Sidebar: React.FC = () => {
     const name = prompt("Nhập tên thư mục:");
     if (!name || !userId) return;
     try {
-      const res = await axios.post(`${API_URL}/user/${userId}/folder/create/`, {
+      const res = await axios.post(`${API_URL}/user/folder/create/`, {
         name,
         parent,
         owner: userId,
@@ -74,7 +74,7 @@ const Sidebar: React.FC = () => {
     if (!confirmDelete) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${API_URL}/user/${userId}/folder/${id}/`,{
+      await axios.delete(`${API_URL}/user/folder/${id}/`,{
         headers:{
           Authorization: `Bearer ${token}`
         }
