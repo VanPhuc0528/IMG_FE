@@ -7,6 +7,7 @@ interface Props {
   folderId: number | null;
   disabled: boolean;
   onUploaded: (newImgs: ImageItem[]) => void;
+  onUpload?: (files: FileList) => Promise<void>;
   userPermission?: string;
 }
 

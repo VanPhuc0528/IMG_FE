@@ -25,12 +25,11 @@ const ImageGrid: React.FC<ImageGridProps> = ({
   userPermission, // nhận prop quyền
 }) => {
   const [images, setImages] = useState<ImageItem[]>([]);
-  const [error, setError] = useState("");
+  const [ _error, setError] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [filter, setFilter] = useState({ year: "", month: "", day: "", keyword: "" });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const currentFolder =
     folderId === null
@@ -76,15 +75,19 @@ const ImageGrid: React.FC<ImageGridProps> = ({
             });
 
       setImages(res.data.images || []);
-    } catch (err) {
-      console.error("Lỗi khi tải ảnh:", err);
-      setError("Không thể tải ảnh.");
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Lỗi khi tải ảnh:", error.message);
+      } else {
+        console.error("Lỗi khi tải ảnh:", error);
+      }
+      setError("Không thể tải ảnh!");
     }
   }, [user_id, folderId, folders]);
 
   useEffect(() => {
     fetchImages();
-  }, [fetchImages, refreshKey]);
+  }, [fetchImages]);
 
   const filteredImages = images.filter((img) => {
     const date = new Date(img.created_at);
@@ -197,7 +200,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({
         <div className={viewMode === "grid" ? "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" : "flex flex-col gap-2"}>
           {filteredImages.map((img) => (
             <div
-              key={`${img.image_name}-${img.id}-${refreshKey}`}
+              key={`${img.image_name}-${img.id}`}
               className={`relative border rounded-lg overflow-hidden shadow ${viewMode === "list" ? "flex items-center" : ""}`}
             >
               <img
