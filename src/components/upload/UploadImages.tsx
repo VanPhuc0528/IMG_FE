@@ -7,6 +7,8 @@ interface Props {
   folderId: number | null;
   disabled: boolean;
   onUploaded: (newImgs: ImageItem[]) => void;
+  onUpload?: (files: FileList) => Promise<void>;
+  userPermission?: string;
 }
 
 const getCurrentUserId = (): number => {
@@ -18,12 +20,21 @@ const getCurrentUserId = (): number => {
   }
 };
 
-const UploadImages: React.FC<Props> = ({ folderId, disabled, onUploaded }) => {
+const UploadImages: React.FC<Props> = ({ folderId, disabled, onUploaded, userPermission }) => {
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Kiểm tra quyền upload
+  const canUpload = userPermission === 'write' || userPermission === 'delete' || !userPermission;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
+
+    // Kiểm tra quyền trước khi upload
+    if (!canUpload) {
+      alert("Bạn không có quyền upload ảnh vào folder này");
+      return;
+    }
 
     const user = JSON.parse(localStorage.getItem("user") || "{}");
     const user_id = user?.id;
@@ -73,17 +84,23 @@ const UploadImages: React.FC<Props> = ({ folderId, disabled, onUploaded }) => {
   return (
     <div
       className={`w-full h-40 border-2 border-dashed flex flex-col justify-center items-center text-center bg-gray-200 rounded cursor-pointer ${
-        disabled ? "opacity-50 pointer-events-none" : "hover:bg-gray-300"
+        disabled || !canUpload ? "opacity-50 pointer-events-none" : "hover:bg-gray-300"
       }`}
-      onClick={() => !disabled && inputRef.current?.click()}
+      onClick={() => canUpload && !disabled && inputRef.current?.click()}
     >
-      <img src="/placeholder-upload.png" alt="upload icon" className="w-12 h-12 mb-2" />
-      <p className="font-medium">Upload ảnh lên đây:</p>
+      {canUpload ? (
+        <>
+          <img src="/placeholder-upload.png" alt="upload icon" className="w-12 h-12 mb-2" />
+          <p className="font-medium">Upload ảnh lên đây:</p>
+        </>
+      ) : (
+        <p className="font-medium text-gray-500">Chỉ có quyền xem - Không thể upload</p>
+      )}
       <input
         ref={inputRef}
         type="file"
         accept="image/*"
-        multiple //Cho phép chọn nhiều ảnh upload
+        multiple
         className="hidden"
         onChange={handleFileChange}
       />

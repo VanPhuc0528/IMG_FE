@@ -221,7 +221,7 @@ const Dashboard: React.FC = () => {
 
         try {
           // Gửi code về backend để đổi lấy access_token + refresh_token
-          const res = await axios.post(`${API_URL}/user/sync/save_drive_token/`, {
+          const res = await axios.post(`${API_URL}/user/sync/save-drive-token/`, {
             code: code,
             userId: userId,
             
@@ -373,7 +373,7 @@ const Dashboard: React.FC = () => {
       const idsToDelete = collectAllFolderIds(folderId, folders);
 
       setFolders((prev) => prev.filter((f) => !idsToDelete.includes(f.id)));
-      setImages((prev) => prev.filter((img) => !idsToDelete.includes(img.folder_id)));
+      setImages((prev) => prev.filter((img) =>img.folder_id === null || !idsToDelete.includes(img.folder_id)));
 
       // Nếu folder đang xem bị xóa thì chuyển về Trang chủ
       if (idsToDelete.includes(selectedFolderId ?? -999)) {
