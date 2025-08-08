@@ -22,7 +22,7 @@ const ImageGrid: React.FC<ImageGridProps> = ({
   onSyncDrive,
   onUploaded,
   onUpload,
-  userPermission, // nhận prop quyền
+  userPermission,
 }) => {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [ _error, setError] = useState("");

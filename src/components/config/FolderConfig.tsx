@@ -1,12 +1,6 @@
 import React from "react";
+import type { Folder } from "../../types";
 
-export interface Folder {
-  id: number;
-  name: string;
-  parent: number | null;
-  allowUpload?: boolean;
-  allowSync?: boolean;
-}
 
 interface FolderConfigProps {
   folder: Folder;

@@ -13,12 +13,10 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="bg-white shadow px-6 py-3 flex justify-between items-center">
-      {/* Logo & tên app */}
       <Link to="/" className="text-lg font-semibold text-sky-700">
         📸 MyDrive
       </Link>
 
-      {/* Menu bên phải */}
       <div className="flex items-center space-x-4">
         <Link to="/" className="text-gray-600 hover:text-sky-600 text-sm">Trang chủ</Link>
         <Link to="/login-google" className="text-gray-600 hover:text-sky-600 text-sm">Đăng nhập Google</Link>

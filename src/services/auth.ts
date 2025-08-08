@@ -23,7 +23,7 @@ export async function register(username: string, email: string, password: string
 
 // ✅ Đăng nhập với Google
 export async function loginGoogle(access_token: string) {
-  const res = await axios.post(`${API_URL}/auth/gg_login/`, {
+  const res = await axios.post(`${API_URL}/auth/gg-login/`, {
     access_token: access_token,
   });
   return res.data; //backend trả về access_token từ Google
