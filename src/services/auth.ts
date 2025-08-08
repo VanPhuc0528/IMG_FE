@@ -8,7 +8,7 @@ export async function login(email: string, password: string) {
     email,
     password,
   });
-  return res.data; // { token, user }
+  return res.data;
 }
 
 // ✅ Đăng ký tài khoản mới
@@ -18,7 +18,7 @@ export async function register(username: string, email: string, password: string
     email,
     password,
   });
-  return res.data;
+  return res.data; //backend trả về username, email, password
 }
 
 // ✅ Đăng nhập với Google
@@ -26,5 +26,5 @@ export async function loginGoogle(access_token: string) {
   const res = await axios.post(`${API_URL}/auth/gg_login/`, {
     access_token: access_token,
   });
-  return res.data;
+  return res.data; //backend trả về access_token từ Google
 }

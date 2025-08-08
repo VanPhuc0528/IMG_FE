@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import FolderTree from "../components/folders/FolderTree";
 import ImageGrid from "../layoutgrid/ImageGrid";
 import FolderConfig from "../components/config/FolderConfig";
@@ -27,7 +27,6 @@ const Dashboard: React.FC = () => {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const accessTokenRef = useRef<string | null>(null);
   const [sharedFolder, setSharedFolder] = useState<SharedFolder[]>([]);
 
   const getCurrentUserId = (): number => {
@@ -200,7 +199,7 @@ const Dashboard: React.FC = () => {
       setLoading(false);
     }
   };
-
+  
   const handleSyncDrive = () => {
     if (!selectedFolderId || !selectedFolder?.allowSync || !window.google?.accounts?.oauth2) return;
 
@@ -210,7 +209,6 @@ const Dashboard: React.FC = () => {
       redirect_uri: "postmessage", // dùng dạng này để không cần redirect
       access_type: "offline", // yêu cầu Google trả refresh_token
       prompt: "consent",       // bắt buộc hiển thị lại consent screen để lấy refresh_token
-
       callback: async (response: { code: string }) => {
         const code = response.code;
         if (!code) {
@@ -222,7 +220,8 @@ const Dashboard: React.FC = () => {
         const token = localStorage.getItem("token");
 
         try {
-          await axios.post(`${API_URL}/user/${userId}/sync/save_drive_token/`, {
+          // Gửi code về backend để đổi lấy access_token + refresh_token
+          const res = await axios.post(`${API_URL}/user/${userId}/sync/save_drive_token/`, {
             code: code,
             userId: userId,
             
@@ -233,11 +232,13 @@ const Dashboard: React.FC = () => {
               Authorization: `Bearer ${token}`,
             },
           });
-
+          console.log("Trả về", res.data);
+          const data = res.data;
+          console.log("Access Token", data.access_token);
+          console.log("Email", data.drive_email);
           console.log("✅ Gửi code về backend thành công");
 
-          // Sau đó bạn có thể gọi API lấy access_token mới từ backend hoặc gọi showPicker nếu backend trả lại access_token
-          // showPicker(access_token, driveEmail); <-- bạn sẽ cần access_token mới từ backend
+          showPicker(data.access_token, data.drive_email);
         } catch (err) {
           console.error("❌ Lỗi gửi code về backend:", err);
         }
@@ -250,6 +251,8 @@ const Dashboard: React.FC = () => {
   const showPicker = (accessToken: string, driveEmail: string) => {
     const view = new window.google.picker.View(window.google.picker.ViewId.DOCS_IMAGES);
     view.setMimeTypes("image/png,image/jpeg,image/jpg,image/gif");
+
+    console.log("AppId dùng cho Picker:", CLIENT_ID.split("-")[0]);
 
     const picker = new window.google.picker.PickerBuilder()
       .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)

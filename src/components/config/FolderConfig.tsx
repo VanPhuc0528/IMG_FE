@@ -1,4 +1,3 @@
-// components/FolderConfig.tsx
 import React from "react";
 
 export interface Folder {

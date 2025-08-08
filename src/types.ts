@@ -9,8 +9,8 @@ export interface User {
 export interface AuthContextType{
     user: User | null;
     token: string | null;
-    loginUser: (user: User, token: string) => void;
-    logoutUser: () => void;
+    loginUser: (user: User, token: string) => void; //nếu login trả về user và token
+    logoutUser: () => void; //đăng xuất xóa toàn bộ dữ liệu đã được Login trả về
 }
 
 //thư mục chung
@@ -27,16 +27,17 @@ export interface Folder {
 export interface SharedFolder {
   id: number;
   name: string;
-  owner: {
-    id: number;
-    email: string;
-    username: string;
-  };
-  shared_by: string;
+  owner_id: number;
+  owner_email: string;
+  owner_username: string;
+  allowUpload: string;
+  allowSync: string;
   permission: 'read' | 'write' | 'delete';
-  shared_at?: string;
-  allowSync?: boolean;
-  allowUpload?: string;
+}
+
+export interface SharedFoldersResponse {
+  user_id: number;
+  shared_folders: SharedFolder[];
 }
 
 //chi tiết ảnh
@@ -55,11 +56,13 @@ export interface GoogleImage {
   thumbnailLink: string;
 }
 
+//google Picker
 export interface GooglePickerFile {
   id: string;
   name: string;
 }
 
+//dữ liệu trong Google Picker
 export interface GooglePickerData {
   action: string;
   docs: GooglePickerFile[];

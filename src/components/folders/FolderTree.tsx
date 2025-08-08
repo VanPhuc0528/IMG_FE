@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from "react";
 import PermissionShare from "../permissions/PermissionShare";
 import { useNavigate } from "react-router-dom";
-
-interface Folder {
-  id: number;
-  name: string;
-  parent: number | null;
-}
+import type { Folder, SharedFolder, SharedFoldersResponse } from "../../types";
 
 interface Props {
   folders: Folder[];
@@ -106,7 +101,7 @@ const FolderTree: React.FC<Props> = ({
           <span>
             📁 {folder.name}
             <span className="text-xs text-gray-500 ml-1">
-              (by {folder.owner.username || folder.owner.email || "?"})
+              (by {folder.owner_username || folder.owner_email || "?"})
             </span>
           </span>
           <span className="text-xs text-gray-500">{folder.permission}</span>
