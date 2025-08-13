@@ -9,6 +9,7 @@ interface ImageGridProps {
   folderId: number | null;
   folders: Folder[];
   images: ImageItem[];
+  onSyncFolder: () => void;
   onSyncDrive: () => void;
   onSelectFolder: (id: number | null) => void;
   onUploaded: (newImgs: ImageItem[]) => void;
@@ -19,6 +20,7 @@ interface ImageGridProps {
 const ImageGrid: React.FC<ImageGridProps> = ({
   folderId,
   folders,
+  onSyncFolder,
   onSyncDrive,
   onUploaded,
   onUpload,
@@ -263,6 +265,12 @@ const ImageGrid: React.FC<ImageGridProps> = ({
             className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
             Đồng bộ Drive
+          </button>
+          <button
+            onClick={onSyncFolder}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Đồng bộ Folder
           </button>
         </div>
       )}

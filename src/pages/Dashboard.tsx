@@ -28,6 +28,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sharedFolder, setSharedFolder] = useState<SharedFolder[]>([]);
+  
 
   const getCurrentUserId = (): number => {
     try {
@@ -41,10 +42,10 @@ const Dashboard: React.FC = () => {
   const selectedFolderId = id === "home" ? null : id ? parseInt(id) : folders.length > 0 ? folders[0].id: null;
   const selectedFolder = folders.find((f) => f.id === selectedFolderId) || sharedFolder.find((f) => f.id === selectedFolderId);
 
+  //trang home
   useEffect(() => {
     const fetchFolders = async () => {
       try {
-        const userId = getCurrentUserId();
         const token = localStorage.getItem("token");
         const response = await axios.get(`${API_URL}/user/home/`, {
           headers: {
@@ -71,9 +72,9 @@ const Dashboard: React.FC = () => {
     fetchFolders();
   }, [id]);
 
+  //Lấy ảnh
   useEffect(() => {
   const fetchImages = async () => {
-    const userId = getCurrentUserId();
     const token = localStorage.getItem("token");
 
     try {
@@ -135,8 +136,8 @@ const Dashboard: React.FC = () => {
     loadApis();
   }, []);
 
+  //Chia sẻ thư mục
   const fetchSharedFolder = async () => {
-    const userId = getCurrentUserId();
     const token  = localStorage.getItem("token");
 
     try {
@@ -157,6 +158,7 @@ const Dashboard: React.FC = () => {
     fetchSharedFolder();
   }, []);
 
+  //Upload ảnh
   const handleUpload = async (files: FileList) => {
     if (!selectedFolder?.allowUpload || files.length === 0) return;
     setLoading(true);
@@ -199,7 +201,110 @@ const Dashboard: React.FC = () => {
       setLoading(false);
     }
   };
-  
+
+  // Đồng bộ Folder từ Google Drive
+  const handleSyncFolder = () => {
+    if (!selectedFolderId || !selectedFolder?.allowSync || !window.google?.accounts?.oauth2) return;
+
+    const codeClient = window.google.accounts.oauth2.initCodeClient({
+      client_id: CLIENT_ID,
+      scope: SCOPE,
+      redirect_uri: "postmessage",
+      access_type: "offline",
+      prompt: "consent",
+      callback: async (response: { code: string }) => {
+        const code = response.code;
+        if (!code) {
+          console.error("❌ Không nhận được mã code");
+          return;
+        }
+
+        const userId = getCurrentUserId();
+        const token = localStorage.getItem("token");
+
+        try {
+          // Gửi code về backend để đổi token
+          const res = await axios.post(
+            `${API_URL}/user/sync/save-drive-token/`,
+            { code, userId,},
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          console.log("✅ Gửi code thành công:", res.data);
+          const { access_token, drive_email } = res.data;
+
+          showFolderPicker(access_token, drive_email);
+        } catch (err) {
+          console.error("❌ Lỗi gửi code về backend:", err);
+        }
+      },
+    });
+
+    codeClient.requestCode();
+  };
+
+  // Mở Google Picker chọn Folder
+  const showFolderPicker = (accessToken: string, driveEmail: string) => {
+    const folderView = new window.google.picker.DocsView(window.google.picker.ViewId.FOLDERS)
+      .setSelectFolderEnabled(true)
+      .setParent("root");
+
+    const picker = new window.google.picker.PickerBuilder()
+      .addView(new window.google.picker.DocsView(window.google.picker.ViewId.DOCS_IMAGES)
+        .setIncludeFolders(true)
+        .setSelectFolderEnabled(true))
+      .addView(folderView)
+      .setOAuthToken(accessToken)
+      .setDeveloperKey(DEVELOPER_KEY)
+      .setAppId(CLIENT_ID.split("-")[0])
+      .setCallback(async (data: any) => {
+        if (data.action === window.google.picker.Action.PICKED && selectedFolderId !== null) {
+          const folder = data.docs[0];
+          const driveFolderId = folder.id;
+          const folderName = folder.name;
+
+          console.log("📂 Folder đã chọn:", driveFolderId, folderName);
+
+          try {
+            const userId = getCurrentUserId();
+            const token = localStorage.getItem("token");
+
+            await axios.post(
+              `${API_URL}/user/sync/folder/`,
+              {
+                user_id: userId,
+                drive_email: driveEmail,
+                drive_folder_id: driveFolderId,
+                folder_name: folderName,
+                parent_folder_id: selectedFolderId,
+                sync_type: "gg_drive",
+              },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            );
+
+            alert("✅ Đồng bộ thư mục thành công!");
+          } catch (err) {
+            console.error("❌ Lỗi khi lưu folder:", err);
+            alert("❌ Không thể lưu thư mục từ Google Drive.");
+          }
+        }
+      })
+      .build();
+
+    picker.setVisible(true);
+  };
+
+  //Đồng bộ Drive
   const handleSyncDrive = () => {
     if (!selectedFolderId || !selectedFolder?.allowSync || !window.google?.accounts?.oauth2) return;
 
@@ -344,17 +449,19 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  //upload folder
   const handleUpdateFolder = (updated: Folder) => {
     setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
   };
 
+  //xóa thư mục
   const handleDeleteFolder = async (folderId: number) => {
     if (!confirm("Xoá thư mục và toàn bộ ảnh bên trong?")) return;
 
     const token = localStorage.getItem("token");
 
     try {
-      await axios.delete(`${API_URL}/user/folder/${folderId}/`, {
+      await axios.delete(`${API_URL}/user/folder/${folderId}/image/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -415,6 +522,7 @@ const Dashboard: React.FC = () => {
           folderId={selectedFolderId}
           folders={folders}
           images={images}
+          onSyncFolder={handleSyncFolder}
           onSyncDrive={handleSyncDrive}
           onSelectFolder={(id) => navigate(`/folder/${id}`)}
           onUploaded={(newImgs) => setImages((prev) => [...prev, ...newImgs])}
