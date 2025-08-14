@@ -6,6 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { ImageItem } from "../types";
 import axios from "axios";
 import type { SharedFolder, Folder, GooglePickerData } from "../types";
+import {jwtDecode} from 'jwt-decode';
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const DEVELOPER_KEY = import.meta.env.VITE_GOOGLE_DEVELOPER_KEY;
@@ -267,8 +268,11 @@ const Dashboard: React.FC = () => {
           const folder = data.docs[0];
           const driveFolderId = folder.id;
           const folderName = folder.name;
+          const parent_folder_id = selectedFolderId;
 
-          console.log("📂 Folder đã chọn:", driveFolderId, folderName);
+          console.log("DriveFolderID:", driveFolderId);
+          console.log("DriveFolderName:", folderName);
+          console.log("DriveParentFolderId:", parent_folder_id);
 
           try {
             const userId = getCurrentUserId();
@@ -304,6 +308,18 @@ const Dashboard: React.FC = () => {
     picker.setVisible(true);
   };
 
+  //Hàm check thời hạn token
+  const checkGoogleToken = async (accessToken: string) => {
+    const res = await fetch(`https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${accessToken}`);
+    if (!res.ok) {
+      console.error("Access token hết hạn hoặc không hợp lệ");
+      return false;
+    }
+    const data = await res.json();
+    console.log("Token info:", data);
+    return true;
+  };
+
   //Đồng bộ Drive
   const handleSyncDrive = () => {
     if (!selectedFolderId || !selectedFolder?.allowSync || !window.google?.accounts?.oauth2) return;
@@ -330,15 +346,16 @@ const Dashboard: React.FC = () => {
             code: code,
             userId: userId,
             
-            // nếu backend cần driveEmail thì bạn phải lấy access_token tạm để fetch
           }, {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
           });
-          console.log("Trả về", res.data);
+
+          checkGoogleToken(res.data.access_token);
           const data = res.data;
+          console.log("Trả về", res.data);
           console.log("Access Token", data.access_token);
           console.log("Email", data.drive_email);
           console.log("✅ Gửi code về backend thành công");
@@ -350,7 +367,7 @@ const Dashboard: React.FC = () => {
       },
     });
 
-    codeClient.requestCode(); // 💥 Kích hoạt popup đăng nhập Google để lấy mã code
+    codeClient.requestCode();
   };
 
   const showPicker = (accessToken: string, driveEmail: string) => {
@@ -362,7 +379,7 @@ const Dashboard: React.FC = () => {
     const picker = new window.google.picker.PickerBuilder()
       .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
       .setAppId(CLIENT_ID.split("-")[0])
-      .setOAuthToken(accessToken) // ✅ access_token từ backend
+      .setOAuthToken(accessToken) //access_token từ backend
       .addView(view)
       .addView(new window.google.picker.DocsUploadView())
       .setDeveloperKey(DEVELOPER_KEY)
@@ -410,6 +427,7 @@ const Dashboard: React.FC = () => {
 
     picker.setVisible(true);
   };
+
 
   const handleAddFolder = async (parentId: number | null) => {
 
@@ -461,7 +479,7 @@ const Dashboard: React.FC = () => {
     const token = localStorage.getItem("token");
 
     try {
-      await axios.delete(`${API_URL}/user/folder/${folderId}/image/`, {
+      await axios.delete(`${API_URL}/user/folder/${folderId}/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

@@ -17,7 +17,7 @@ const GoogleDriveFolderPicker: React.FC = () => {
   const SCOPES = ["https://www.googleapis.com/auth/drive.readonly"];
 
   const handlePickFolder = async () => {
-    // Load auth2 & picker
+    // tiến hành chạy Outh2.0 và Google Picker
     await new Promise((resolve) => {
       window.gapi.load("auth2", resolve);
     });
