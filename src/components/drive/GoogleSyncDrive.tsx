@@ -1,9 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-
-const CLIENT_ID = "1070318039881-53p11ea9cvllv03g594jg28t7br02kgv.apps.googleusercontent.com";
-const API_KEY = "AIzaSyAqWGu8sO8GBBHZYjZ9tvdAjBD4JRptrYs";
-const SCOPE = "https://www.googleapis.com/auth/drive.readonly";
-const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
 import axios from "axios";
 
 interface GoogleImage {
@@ -17,88 +12,66 @@ const GoogleDriveSync: React.FC = () => {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const accessTokenRef = useRef<string | null>(null);
 
+  // 1️⃣ Khi component mount → gọi backend lấy access_token còn hạn
   useEffect(() => {
-    const loadGoogleApi = () => {
-      const script = document.createElement("script");
-      script.src = "https://apis.google.com/js/api.js";
-      script.onload = () => {
-        window.gapi.load("client:auth2", initClient);
-      };
-      document.body.appendChild(script);
-    };
-
-    const initClient = () => {
-      window.gapi.client
-        .init({
-          apiKey: API_KEY,
-          clientId: CLIENT_ID,
-          scope: SCOPE,
-          discoveryDocs: [DISCOVERY_DOC],
-        })
-        .then(() => {
-          const authInstance = window.gapi.auth2.getAuthInstance();
-          if (!authInstance.isSignedIn.get()) {
-            authInstance.signIn().then(() => handleTokenAndImages());
-          } else {
-            handleTokenAndImages();
-          }
-        });
-    };
-
-    const handleTokenAndImages = () => {
-      const authInstance = window.gapi.auth2.getAuthInstance();
-      const currentUser = authInstance.currentUser.get();
-      const authResponse = currentUser.getAuthResponse();
-      const token = authResponse?.access_token;
-
-      if (token) {
-        accessTokenRef.current = token;
-        console.log("✅ Access Token:", token);
-
-        axios.post("http://127.0.0.1:8000/api/user/save_drive_token/", {token}, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        })
-          .then(() => {
-            console.log("✅ Token đã gửi về server.");
-          })
-          .catch((err) => console.error("❌ Lỗi gửi token:", err));
-
-        fetchDriveImages();
-      } else {
-        console.error("⚠️ Không thể lấy được access token.");
-      }
-    };
-
-    loadGoogleApi();
+    const token = localStorage.getItem("google_access_token");
+    if (token) {
+      accessTokenRef.current = token;
+      loadGoogleApi(token);
+    } else {
+      fetchAccessToken();
+    }
   }, []);
 
-  const fetchDriveImages = () => {
-    window.gapi.client.drive.files
-      .list({
-        q: "mimeType contains 'image/' and trashed = false",
-        fields: "files(id, name, thumbnailLink)",
-        pageSize: 20,
-      })
-      .then((response: { result: { files: GoogleImage[] } }) => {
-        setImages(response.result.files || []);
+  const fetchAccessToken = async () => {
+    try {
+      const resp = await axios.post("http://127.0.0.1:8000/api/sync_drive_folder/");
+      const token = resp.data.access_token;
+      accessTokenRef.current = token;
+      localStorage.setItem("google_access_token", token); // ✅ Lưu token
+      loadGoogleApi(token);
+    } catch (err) {
+      console.error("❌ Lỗi lấy token từ backend:", err);
+    }
+  };
+
+  // 2️⃣ Load Google API và fetch ảnh
+  const loadGoogleApi = (token: string) => {
+    const script = document.createElement("script");
+    script.src = "https://apis.google.com/js/api.js";
+    script.onload = () => {
+      window.gapi.load("client", async () => {
+        await window.gapi.client.init({
+          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+        });
+
+        window.gapi.client.setToken({ access_token: token });
+
+        window.gapi.client.drive.files
+          .list({
+            q: "mimeType contains 'image/' and trashed = false",
+            fields: "files(id, name, thumbnailLink)",
+            pageSize: 20,
+          })
+          .then((response: { result: { files: GoogleImage[] } }) => {
+            setImages(response.result.files || []);
+          })
+          .catch((err: any) => console.error("❌ Lỗi fetch ảnh:", err));
       });
+    };
+    document.body.appendChild(script);
   };
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
       const updated = new Set(prev);
-      if (updated.has(id)) {
-        updated.delete(id);
-      } else {
-        updated.add(id);
-      }
+      if (updated.has(id)) updated.delete(id);
+      else updated.add(id);
       return updated;
     });
   };
 
+  // 3️⃣ Đồng bộ ảnh đã chọn lên backend
   const handleSync = async () => {
     const token = accessTokenRef.current;
     if (!token) {
@@ -108,20 +81,19 @@ const GoogleDriveSync: React.FC = () => {
 
     const selectedImages = images.filter((img) => selected.has(img.id));
 
-    console.log("🔥 Body gửi đi:", {
-      images: selectedImages,
-      token,
-    });
-
     try {
-      await axios.post("http://127.0.0.1:8000/api/drive/sync/", {images, token}, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await axios.post(
+        "http://127.0.0.1:8000/api/drive/sync/",
+        { images: selectedImages },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      alert("✅ Đồng bộ thành công!");
+      alert(`✅ Đồng bộ thành công ${selectedImages.length} ảnh!`);
     } catch (err) {
       console.error("❌ Lỗi đồng bộ:", err);
       alert("Đồng bộ thất bại!");

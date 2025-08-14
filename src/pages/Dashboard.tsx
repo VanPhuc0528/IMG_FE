@@ -6,7 +6,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { ImageItem } from "../types";
 import axios from "axios";
 import type { SharedFolder, Folder, GooglePickerData } from "../types";
-import {jwtDecode} from 'jwt-decode';
+
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const DEVELOPER_KEY = import.meta.env.VITE_GOOGLE_DEVELOPER_KEY;
@@ -322,17 +322,25 @@ const Dashboard: React.FC = () => {
 
   //Đồng bộ Drive
   const handleSyncDrive = () => {
-    if (!selectedFolderId || !selectedFolder?.allowSync || !window.google?.accounts?.oauth2) return;
+    if (!selectedFolderId || !selectedFolder?.allowSync) return;
+
+    const savedAccessToken = localStorage.getItem("google_drive_access_token");
+    const savedDriveEmail = localStorage.getItem("google_drive_email");
+
+    if (savedAccessToken && savedDriveEmail) {
+      console.log("✅ Dùng token cũ để mở picker", savedAccessToken);
+      showPicker(savedAccessToken, savedDriveEmail);
+      return;
+    }
 
     const codeClient = window.google.accounts.oauth2.initCodeClient({
       client_id: CLIENT_ID,
       scope: SCOPE,
-      redirect_uri: "postmessage", // dùng dạng này để không cần redirect
-      access_type: "offline", // yêu cầu Google trả refresh_token
-      prompt: "consent",       // bắt buộc hiển thị lại consent screen để lấy refresh_token
+      redirect_uri: "postmessage",
+      access_type: "offline",
+      prompt: "consent",
       callback: async (response: { code: string }) => {
-        const code = response.code;
-        if (!code) {
+        if (!response.code) {
           console.error("❌ Không nhận được mã code");
           return;
         }
@@ -341,11 +349,9 @@ const Dashboard: React.FC = () => {
         const token = localStorage.getItem("token");
 
         try {
-          // Gửi code về backend để đổi lấy access_token + refresh_token
           const res = await axios.post(`${API_URL}/user/sync/save-drive-token/`, {
-            code: code,
+            code: response.code,
             userId: userId,
-            
           }, {
             headers: {
               "Content-Type": "application/json",
@@ -353,12 +359,12 @@ const Dashboard: React.FC = () => {
             },
           });
 
-          checkGoogleToken(res.data.access_token);
           const data = res.data;
-          console.log("Trả về", res.data);
-          console.log("Access Token", data.access_token);
-          console.log("Email", data.drive_email);
-          console.log("✅ Gửi code về backend thành công");
+          console.log("✅ Đăng nhập Google thành công");
+
+          // Lưu để lần sau không cần login
+          localStorage.setItem("google_drive_access_token", data.access_token);
+          localStorage.setItem("google_drive_email", data.drive_email);
 
           showPicker(data.access_token, data.drive_email);
         } catch (err) {
@@ -369,7 +375,6 @@ const Dashboard: React.FC = () => {
 
     codeClient.requestCode();
   };
-
   const showPicker = (accessToken: string, driveEmail: string) => {
     const view = new window.google.picker.View(window.google.picker.ViewId.DOCS_IMAGES);
     view.setMimeTypes("image/png,image/jpeg,image/jpg,image/gif");
